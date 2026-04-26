@@ -112,7 +112,11 @@ body {
 }
 
 .swipe-item {
+    position: relative;
+    z-index: 2;
+    background: rgba(30,41,59,0.95);
     transition: transform 0.25s ease;
+    width: 100%;
 }
 
 .delete-btn {
@@ -127,39 +131,36 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 22px;
+    z-index: 1;
 }
 </style>
 </head>
 
 <body>
+
 <div class="app-header">💰 Loan Tracker</div>
 
 <div class="text-center mt-2 mb-3 text-muted">
     📅 {{ now.strftime('%B %Y') }}
 </div>
 
-
 <div class="container py-4 mb-5">
 
-    <!-- SUMMARY -->
-    <div class="row text-center mb-3">
+<!-- SUMMARY -->
+<div class="row text-center mb-3">
 
-    <!-- 💳 LOANS -->
     <div class="col">
         <div class="card p-3">
             <small>💳 Loans</small>
-
             <h6 class="text-success">₱{{ loan_total }}</h6>
             <small class="text-light">Paid: ₱{{ loan_paid }}</small><br>
             <small class="text-danger">Remaining: ₱{{ loan_remaining }}</small>
         </div>
     </div>
 
-    <!-- 💡 UTILITIES -->
     <div class="col">
         <div class="card p-3">
             <small>💡 Utilities</small>
-
             <h6 class="text-info">₱{{ utility_total }}</h6>
             <small class="text-light">Paid: ₱{{ utility_paid }}</small><br>
             <small class="text-danger">Remaining: ₱{{ utility_remaining }}</small>
@@ -167,32 +168,39 @@ body {
     </div>
 
 </div>
-   
-    <!-- FILTER -->
-    <div class="d-flex gap-2 mb-3 justify-content-center">
-        <button class="btn btn-outline-light btn-sm" onclick="filterType('all')">All</button>
-        <button class="btn btn-outline-success btn-sm" onclick="filterType('loan')">💳 Loans</button>
-        <button class="btn btn-outline-info btn-sm" onclick="filterType('utility')">💡 Utilities</button>
-    </div>
 
-    <!-- 💳 LOANS -->
+<!-- FILTER -->
+<div class="d-flex gap-2 mb-3 justify-content-center">
+    <button class="btn btn-outline-light btn-sm" onclick="filterType('all')">All</button>
+    <button class="btn btn-outline-success btn-sm" onclick="filterType('loan')">💳 Loans</button>
+    <button class="btn btn-outline-info btn-sm" onclick="filterType('utility')">💡 Utilities</button>
+</div>
 
+<!-- 🔁 ALL ITEMS (ONE CLEAN LOOP) -->
 {% for loan in loans %}
-{% if loan.type == 'loan' or not loan.type %}
 
-<div class="swipe-container">
+<div class="swipe-container mb-3">
 
     <div class="delete-btn" onclick="confirmDelete('{{ loan.id }}')">
         🗑
     </div>
 
-    <div class="card shadow-sm p-3 mb-3 loan-card swipe-item" data-type="loan">
+    <div class="card shadow-sm p-3 loan-card swipe-item"
+         data-type="{{ loan.type if loan.type else 'loan' }}">
 
+        <!-- HEADER -->
         <div class="d-flex align-items-center gap-3">
+
             {% if loan.image %}
                 <img src="{{ url_for('static', filename='uploads/' + loan.image) }}" class="loan-img">
             {% else %}
-                <img src="https://via.placeholder.com/60" class="loan-img">
+                <div class="loan-img d-flex align-items-center justify-content-center bg-secondary text-white">
+                    {% if loan.type == 'utility' %}
+                        💡
+                    {% else %}
+                        💳
+                    {% endif %}
+                </div>
             {% endif %}
 
             <div class="flex-grow-1">
@@ -208,156 +216,35 @@ body {
             </div>
         </div>
 
+        <!-- PROGRESS -->
         {% set percent = (loan.paid / (loan.total + loan.charges)) * 100 if (loan.total + loan.charges) > 0 else 0 %}
         <div class="mt-3">
             <div class="progress">
-                <div class="progress-bar bg-success" data-width="{{ percent }}"></div>
+                <div class="progress-bar {{ 'bg-info' if loan.type == 'utility' else 'bg-success' }}"
+                     data-width="{{ percent }}"></div>
             </div>
             <small>{{ percent|round(1) }}% Paid</small>
         </div>
 
+        <!-- AMOUNTS -->
         <div class="row text-center mt-3">
-            <div class="col"><small>Total</small><h6>₱{{ loan.total }}</h6></div>
+            <div class="col"><small>{{ 'Bill' if loan.type == 'utility' else 'Total' }}</small><h6>₱{{ loan.total }}</h6></div>
             <div class="col"><small>Paid</small><h6 class="text-success">₱{{ loan.paid }}</h6></div>
             <div class="col"><small>Remaining</small><h6 class="text-danger">₱{{ loan.remaining }}</h6></div>
         </div>
 
+        <!-- BUTTONS -->
         <div class="mt-3 d-flex gap-2">
-            <button class="btn btn-success btn-sm w-100 pay-btn" data-id="{{ loan.id }}">
-                💸
-            </button>
-
+            <button class="btn btn-success btn-sm w-100 pay-btn" data-id="{{ loan.id }}">💸</button>
             <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜</a>
         </div>
 
     </div>
 </div>
 
-{% endif %}
-{% endfor %}
-
-    <!-- 💡 UTILITIES -->
-
-{% for loan in loans %}
-    {% if loan.type == 'utility' %}
-
-<div class="card shadow-sm p-3 mb-3 loan-card" data-type="utility">
-
-    <div class="d-flex align-items-center gap-3">
-      {% if loan.image %}
-    <img src="{{ url_for('static', filename='uploads/' + loan.image) }}" class="loan-img">
-{% else %}
-    <div class="loan-img d-flex align-items-center justify-content-center bg-secondary text-white">
-        {% set name = loan.name.lower() %}
-
-        {% if 'electric' in name or 'kuryente' in name %}
-            💡
-        {% elif 'wifi' in name or 'internet' in name %}
-            🌐
-        {% elif 'water' in name or 'tubig' in name %}
-            💧
-        {% elif 'rent' in name %}
-            🏠
-        {% else %}
-            📄
-        {% endif %}
-    </div>
-{% endif %}
-
-        <div class="flex-grow-1">
-            <h5 class="mb-1">{{ loan.name }}</h5>
-
-            {% if loan.status == "overdue" %}
-                <small class="text-danger">🔴 Overdue</small>
-            {% elif loan.status == "warning" %}
-                <small class="text-warning">🟡 Due Soon</small>
-            {% else %}
-                <small class="text-muted">Due: {{ loan.due_date }}</small>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- PROGRESS -->
-    {% set percent = (loan.paid / (loan.total + loan.charges)) * 100 if (loan.total + loan.charges) > 0 else 0 %}
-    <div class="mt-3">
-        <div class="progress">
-            <div class="progress-bar bg-info" data-width="{{ percent }}"></div>
-        </div>
-        <small>{{ percent|round(1) }}% Paid</small>
-    </div>
-
-    <!-- AMOUNT -->
-    <div class="row text-center mt-3">
-        <div class="col">
-            <small>Bill</small>
-            <h6>₱{{ loan.total }}</h6>
-        </div>
-        <div class="col">
-            <small>Paid</small>
-            <h6 class="text-success">₱{{ loan.paid }}</h6>
-        </div>
-        <div class="col">
-            <small>Remaining</small>
-            <h6 class="text-danger">₱{{ loan.remaining }}</h6>
-        </div>
-    </div>
-
-    <!-- BUTTONS -->
- {% for loan in loans %}
-{% if loan.type == 'utility' %}
-
-<div class="swipe-container">
-
-    <div class="delete-btn" onclick="confirmDelete({{ loan.id }})">
-        🗑
-    </div>
-
-    <div class="card shadow-sm p-3 mb-3 loan-card swipe-item" data-type="utility">
-
-        <div class="d-flex align-items-center gap-3">
-            {% if loan.image %}
-                <img src="{{ url_for('static', filename='uploads/' + loan.image) }}" class="loan-img">
-            {% else %}
-                <div class="loan-img d-flex align-items-center justify-content-center bg-secondary text-white">
-                    💡
-                </div>
-            {% endif %}
-
-            <div class="flex-grow-1">
-                <h5 class="mb-1">{{ loan.name }}</h5>
-                <small class="text-muted">Due: {{ loan.due_date }}</small>
-            </div>
-        </div>
-
-        {% set percent = (loan.paid / (loan.total + loan.charges)) * 100 if (loan.total + loan.charges) > 0 else 0 %}
-        <div class="mt-3">
-            <div class="progress">
-                <div class="progress-bar bg-info" data-width="{{ percent }}"></div>
-            </div>
-        </div>
-
-        <div class="row text-center mt-3">
-            <div class="col"><small>Bill</small><h6>₱{{ loan.total }}</h6></div>
-            <div class="col"><small>Paid</small><h6 class="text-success">₱{{ loan.paid }}</h6></div>
-            <div class="col"><small>Remaining</small><h6 class="text-danger">₱{{ loan.remaining }}</h6></div>
-        </div>
-
-        <div class="mt-3 d-flex gap-2">
-            <button class="btn btn-success btn-sm w-100 pay-btn" data-id="{{ loan.id }}">
-                💸
-            </button>
-
-            <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜</a>
-        </div>
-
-    </div>
-</div>
-
-{% endif %}
 {% endfor %}
 
 </div>
-
 <!-- MODAL -->
 <div class="modal fade" id="receiptModal">
   <div class="modal-dialog modal-dialog-centered">
