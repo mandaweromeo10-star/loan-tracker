@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect
 import sqlite3, os
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
@@ -10,13 +11,13 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 def get_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('database.db', check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def init_db():
     conn = get_db()
+    
 
     conn.execute('''
         CREATE TABLE IF NOT EXISTS loans (
@@ -43,9 +44,8 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-
-init_db()
+    if not os.path.exists('database.db'):
+        init_db()
 
 
 @app.route('/')
