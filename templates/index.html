@@ -109,14 +109,16 @@ body {
 .swipe-container {
     position: relative;
     overflow: hidden;
+     border-radius: 18px; /* SAME as card */
+    margin-bottom: 12px; /* moved here */
 }
 
 .swipe-item {
     position: relative;
     z-index: 2;
-    background: rgba(30,41,59,0.95);
+    background: rgba(30,41,59,1);
+    border-radius: 18px;
     transition: transform 0.25s ease;
-    width: 100%;
 }
 
 .delete-btn {
@@ -126,12 +128,14 @@ body {
     bottom: 0;
     width: 80px;
     background: #ef4444;
-    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    z-index: 1;
+    color: white;
+    font-size: 20px;
+
+    /* 🔥 IMPORTANT FIX */
+    border-radius: 0 18px 18px 0;
 }
 </style>
 </head>
