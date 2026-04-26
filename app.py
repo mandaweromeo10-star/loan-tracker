@@ -203,6 +203,19 @@ def add_payment(loan_id):
 
     return render_template('add_payment.html', loan_id=loan_id)
 
+@app.route('/delete_loan/<int:loan_id>', methods=['POST'])
+def delete_loan(loan_id):
+    conn = get_db()
+
+    # delete payments first (important to avoid orphan data)
+    conn.execute("DELETE FROM payments WHERE loan_id=?", (loan_id,))
+    conn.execute("DELETE FROM loans WHERE id=?", (loan_id,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect('/')
+
 
 @app.route('/history/<int:loan_id>')
 def history(loan_id):

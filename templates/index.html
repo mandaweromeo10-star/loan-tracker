@@ -56,6 +56,11 @@ body {
     border: none;
 }
 
+.btn-danger {
+    background: #ef4444;
+    border: none;
+}
+
 .loan-img {
     width: 60px;
     height: 60px;
@@ -197,13 +202,19 @@ body {
                 {% endif %}
             </div>
 
-            <div class="mt-3 d-flex gap-2">
-     <button class="btn btn-success btn-sm w-100 pay-btn"
+  <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-success btn-sm w-100 pay-btn"
         data-id="{{ loan.id }}">
-    💸 Pay
-</button>
-                <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜 History</a>
-            </div>
+        💸 Pay
+    </button>
+
+    <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜</a>
+
+    <form action="/delete_loan/{{ loan.id }}" method="POST" 
+          onsubmit="return confirm('Delete this loan?')" class="w-100">
+        <button class="btn btn-danger btn-sm w-100">🗑</button>
+    </form>
+</div>
 
         </div>
         {% endif %}
@@ -276,13 +287,19 @@ body {
     </div>
 
     <!-- BUTTONS -->
-    <div class="mt-3 d-flex gap-2">
-   <button class="btn btn-success btn-sm w-100 pay-btn"
+ <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-success btn-sm w-100 pay-btn"
         data-id="{{ loan.id }}">
-    💸 Pay
-</button>
-        <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜 History</a>
-    </div>
+        💸 Pay
+    </button>
+
+    <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜</a>
+
+    <form action="/delete_loan/{{ loan.id }}" method="POST" 
+          onsubmit="return confirm('Delete this bill?')" class="w-100">
+        <button class="btn btn-danger btn-sm w-100">🗑</button>
+    </form>
+</div>
 
 </div>
 
