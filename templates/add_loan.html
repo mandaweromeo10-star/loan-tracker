@@ -122,11 +122,35 @@ body {
                 </div>
             </div>
 
-            <!-- Due Date -->
-            <div class="mb-3">
-                <div class="label">Due Date</div>
-                <input type="date" name="due_date" class="form-control" required>
-            </div>
+<!-- PAYMENT SCHEDULE -->
+
+<div class="mb-3">
+    <div class="label">Payment Schedule</div>
+
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="schedule" value="single" checked onclick="toggleSchedule()">
+        <label class="form-check-label">Once a month</label>
+    </div>
+
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="schedule" value="multiple" onclick="toggleSchedule()">
+        <label class="form-check-label">Multiple times per month</label>
+    </div>
+</div>
+
+<!-- SINGLE DATE -->
+<div id="singleDate" class="mb-3">
+    <div class="label">Due Date</div>
+    <input type="date" name="due_date" class="form-control">
+</div>
+
+<!-- MULTIPLE DAYS -->
+<div id="multiDays" style="display:none;" class="mb-3">
+    <div class="label">Select Two Due Dates</div>
+
+    <input type="date" name="day1" class="form-control mb-2">
+    <input type="date" name="day2" class="form-control">
+</div>
 
             <!-- Upload -->
             <div class="mb-3">
@@ -156,6 +180,23 @@ function previewImage(event){
     if(file){
         img.src = URL.createObjectURL(file);
         img.style.display = 'block';
+    }
+}
+</script>
+
+<script>
+function toggleSchedule() {
+    const multi = document.getElementById("multiDays");
+    const single = document.getElementById("singleDate");
+
+    const selected = document.querySelector("input[name='schedule']:checked").value;
+
+    if (selected === "multiple") {
+        multi.style.display = "block";
+        single.style.display = "none";
+    } else {
+        multi.style.display = "none";
+        single.style.display = "block";
     }
 }
 </script>

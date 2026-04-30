@@ -21,31 +21,66 @@ body {
 .app-header {
     position: sticky;
     top: 0;
-    background: rgba(15,23,42,0.9);
+    background: rgba(15,23,42,0.95);
     backdrop-filter: blur(10px);
-    padding: 15px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 12px 16px;
+    height: 60px;
+
     z-index: 10;
 }
 
 /* CARD */
 .card {
-    background: rgba(30,41,59,0.9);
-    border-radius: 18px;
+    background: rgba(30,41,59,0.6);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    padding: 16px;
+     transition: 0.2s ease;
+     color: #e2e8f0; 
+}
+.card small,
+.card h5,
+.card h6,
+.card span {
     color: #e2e8f0;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    border: none;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+small {
+    color: #94a3b8 !important;
+}
+.container {
+    overflow-x: hidden;
+}
+/* LOANS (GREEN GLOW) */
+/* LOANS (SOLID GREEN SHADOW) */
+.loan-card-glow {
+    box-shadow:
+        0.05px 2px 2px rgba(34,197,94,0.7); /* 👈 solid base */
+}
+
+/* UTILITIES (SOLID BLUE SHADOW) */
+.utility-card-glow {
+    box-shadow:
+        0.05px 2px 2px rgba(59,130,246,0.7); /* 👈 solid base */
 }
 
 .card:active {
     transform: scale(0.97);
 }
+.card:hover {
+    transform: translateY(-3px);
+}
 
 /* BUTTONS */
+.btn {
+    transition: all 0.2s ease;
+}
 .btn-success {
     background: #22c55e;
     border: none;
@@ -59,6 +94,9 @@ body {
 .btn-danger {
     background: #ef4444;
     border: none;
+}
+.btn:active {
+    transform: scale(0.96);
 }
 
 .loan-img {
@@ -86,21 +124,41 @@ body {
     text-decoration: none;
 }
 
-/* NAVBAR */
 .bottom-nav {
     position: fixed;
     bottom: 0;
+    left: 0;
     width: 100%;
-    background: #1e293b;
-    padding: 10px;
+
+    background: rgba(30,41,59,0.95);
+    backdrop-filter: blur(10px);
+
     display: flex;
     justify-content: space-around;
+    align-items: center;
+
+    height: 60px;
+    z-index: 20;
 }
 
 .bottom-nav a {
+    flex: 1;
+    text-align: center;
     color: #cbd5f5;
     text-decoration: none;
-    font-size: 18px;
+    font-size: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 100%;
+}
+
+/* REMOVE ANY BACKGROUND */
+.bottom-nav a * {
+    background: none !important;
+    box-shadow: none !important;
 }
 .text-muted {
     color: #94a3b8 !important;
@@ -119,6 +177,7 @@ body {
     background: rgba(30,41,59,1);
     border-radius: 18px;
     transition: transform 0.25s ease;
+     pointer-events: auto;
 }
 
 .delete-btn {
@@ -137,6 +196,157 @@ body {
     /* 🔥 IMPORTANT FIX */
     border-radius: 0 18px 18px 0;
 }
+
+.swipe-item {
+    position: relative;
+    z-index: 2;  /* 👈 bring buttons on top */
+}
+.card {
+    cursor: default; /* instead of pointer */
+}
+.delete-btn {
+    z-index: 1;
+    pointer-events: none;
+}
+.swipe-container.active .delete-btn {
+    pointer-events: auto; /* only clickable when swiped */
+}
+button {
+    pointer-events: auto;
+}
+
+.dash-card {
+    min-height: 90px;
+    border-radius: 15px;
+    background: #1e2a38;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.summary-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+.icon-bg {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: rgba(34,197,94,0.2);
+}
+
+.icon-bg.red {
+    background: rgba(239,68,68,0.2);
+}
+
+.icon-bg.blue {
+    background: rgba(59,130,246,0.2);
+}
+
+.icon-bg.yellow {
+    background: rgba(234,179,8,0.2);
+}
+
+.btn-outline-light {
+    border-radius: 20px;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-outline-light:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* CALENDAR LIGHT MODE */
+#calendar {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 10px;
+}
+
+/* HEADER (month, arrows) */
+.fc-toolbar-title {
+    color: #111827;
+}
+
+.fc-button {
+    background: #e5e7eb !important;
+    border: none !important;
+    color: #111827 !important;
+}
+
+/* DAYS TEXT */
+.fc-daygrid-day-number {
+    color: #111827;
+}
+
+/* GRID */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border: 1px solid #e5e7eb;
+}
+
+/* DAY NAMES */
+.fc-col-header-cell {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* EVENTS */
+.fc-daygrid-event {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 2px 4px;
+    font-size: 11px;
+}
+
+/* TODAY HIGHLIGHT */
+.fc-day-today {
+    background: #dbeafe !important;
+}
+
+.progress-bar {
+    transition: width 1s ease;
+}
+
+.btn-history {
+    background: #3b82f6;
+    border: none;
+}
+.btn-primary:hover {
+    background: #1e40af;  /* darker blue */
+    border-color: #1e40af;
+}
+
+.badge.bg-danger {
+    animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 </head>
 
@@ -144,40 +354,141 @@ body {
 
 <div class="app-header">💰 Loan Tracker</div>
 
-<div class="text-center mt-2 mb-3 text-muted">
-    📅 {{ now.strftime('%B %Y') }}
+{% if overdue_count > 0 %}
+<div class="alert alert-danger text-center">
+  ⚠ You have {{ overdue_count }} overdue payments!
+</div>
+{% endif %}
+
+{% if due_today_count > 0 %}
+<div class="alert alert-warning text-center">
+  📅 {{ due_today_count }} due today!
+</div>
+{% endif %}
+
+<div class="text-center mt-2 mb-3">
+    <button class="btn btn-outline-light btn-sm px-3" onclick="openCalendar()">
+        📅 {{ now.strftime('%B %Y') }}
+    </button>
+</div>
+
+<div class="container mt-2">
+
+  <div class="row g-3 text-center mb-3">
+
+    <div class="col-6">
+      <div class="card dash-card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small>💰 Paid This Month</small>
+            <h6 class="count" data-value="{{ total_paid_month }}">₱0</h6>
+          </div>
+          <div class="icon-bg">💵</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="card dash-card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small>❌ Overdue</small>
+            <h5 class="text-danger">{{ overdue_count }}</h5>
+          </div>
+          <div class="icon-bg red">✖</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="card dash-card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small>📅 Due Today</small>
+            <h5 class="text-warning">{{ due_today_count }}</h5>
+          </div>
+          <div class="icon-bg blue">📅</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="card dash-card p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small>⚠ Upcoming</small>
+            <h5 class="text-primary">{{ upcoming_count }}</h5>
+          </div>
+          <div class="icon-bg yellow">⚠</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
 </div>
 
 <div class="container py-4 mb-5">
 
 <!-- SUMMARY -->
-<div class="row text-center mb-3">
+<div class="row g-3 mb-3 align-items-stretch">
 
-    <div class="col">
-        <div class="card p-3">
-            <small>💳 Loans</small>
-            <h6 class="text-success">₱{{ loan_total }}</h6>
-            <small class="text-light">Paid: ₱{{ loan_paid }}</small><br>
-            <small class="text-danger">Remaining: ₱{{ loan_remaining }}</small>
-        </div>
-    </div>
+  <div class="col-6">
+    <div class="card summary-card loan-card-glow p-3">
 
-    <div class="col">
-        <div class="card p-3">
-            <small>💡 Utilities</small>
-            <h6 class="text-info">₱{{ utility_total }}</h6>
-            <small class="text-light">Paid: ₱{{ utility_paid }}</small><br>
-            <small class="text-danger">Remaining: ₱{{ utility_remaining }}</small>
-        </div>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="icon-bg">💳</div>
+        <h6 class="mb-0">Loans</h6>
+      </div>
+
+      <h4 class="text-success count" data-value="{{ loan_total }}">₱0</h4>
+
+      <hr style="border-color: rgba(255,255,255,0.1)">
+
+      <div class="d-flex justify-content-between">
+        <small>Paid</small>
+        <small>₱{{ "{:,.0f}".format(loan_paid) }}</small>
+      </div>
+
+      <div class="d-flex justify-content-between text-danger">
+        <small>Remaining</small>
+        <small>₱{{ "{:,.0f}".format(loan_remaining) }}</small>
+      </div>
+
     </div>
+  </div>
+
+  <div class="col-6">
+    <div class="card summary-card utility-card-glow p-3">
+
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="icon-bg blue">💡</div>
+        <h6 class="mb-0">Bills</h6>
+      </div>
+
+      <h4 class="text-info count" data-value="{{ utility_total }}">₱0</h4>
+
+      <hr style="border-color: rgba(255,255,255,0.1)">
+
+      <div class="d-flex justify-content-between">
+        <small>Paid</small>
+        <small>₱{{ "{:,.0f}".format(utility_paid) }}</small>
+      </div>
+
+      <div class="d-flex justify-content-between text-danger">
+        <small>Remaining</small>
+        <small>₱{{ "{:,.0f}".format(utility_remaining) }}</small>
+      </div>
+
+    </div>
+  </div>
 
 </div>
-
 <!-- FILTER -->
 <div class="d-flex gap-2 mb-3 justify-content-center">
     <button class="btn btn-outline-light btn-sm" onclick="filterType('all')">All</button>
     <button class="btn btn-outline-success btn-sm" onclick="filterType('loan')">💳 Loans</button>
-    <button class="btn btn-outline-info btn-sm" onclick="filterType('utility')">💡 Utilities</button>
+    <button class="btn btn-outline-info btn-sm" onclick="filterType('utility')">💡 Bills</button>
 </div>
 
 <!-- 🔁 ALL ITEMS (ONE CLEAN LOOP) -->
@@ -207,40 +518,98 @@ body {
                 </div>
             {% endif %}
 
-            <div class="flex-grow-1">
-                <h5 class="mb-1">{{ loan.name }}</h5>
+          <div class="flex-grow-1">
+    <h5 class="mb-1">{{ loan.name }}</h5>
 
-                {% if loan.status == "overdue" %}
-                    <small class="text-danger">🔴 Overdue</small>
-                {% elif loan.status == "warning" %}
-                    <small class="text-warning">🟡 Due Soon</small>
-                {% else %}
-                    <small class="text-muted">Due: {{ loan.due_date }}</small>
-                {% endif %}
-            </div>
+    {% if loan.status == "overdue" %}
+        <span class="badge bg-danger">🔴 Overdue</span>
+
+    {% elif loan.status == "today" %}
+        <span class="badge bg-primary">🔵 Due Today</span>
+
+    {% elif loan.status == "warning" %}
+        <span class="badge bg-warning text-dark">🟡 Due Soon</span>
+
+    {% else %}
+        <small class="text-muted">
+        📅 {{ loan.due_date }}
+    </small>
+{% endif %}
+</div>
         </div>
 
         <!-- PROGRESS -->
         {% set percent = (loan.paid / (loan.total + loan.charges)) * 100 if (loan.total + loan.charges) > 0 else 0 %}
-        <div class="mt-3">
-            <div class="progress">
-                <div class="progress-bar {{ 'bg-info' if loan.type == 'utility' else 'bg-success' }}"
-                     data-width="{{ percent }}"></div>
-            </div>
-            <small>{{ percent|round(1) }}% Paid</small>
-        </div>
+     <div class="mt-3">
+    <div class="progress">
+    <div class="progress-bar 
+        {% if percent < 30 %}
+            bg-secondary
+        {% elif percent < 70 %}
+            bg-warning
+        {% elif loan.type == 'utility' %}
+            bg-info
+        {% else %}
+            bg-success
+        {% endif %}"
+        style="width: {{ percent }}%">
+    </div>
+</div>
+
+    <small class="text-muted">{{ percent|round(1) }}% Paid</small>
+</div>
 
         <!-- AMOUNTS -->
-        <div class="row text-center mt-3">
-            <div class="col"><small>{{ 'Bill' if loan.type == 'utility' else 'Total' }}</small><h6>₱{{ loan.total }}</h6></div>
-            <div class="col"><small>Paid</small><h6 class="text-success">₱{{ loan.paid }}</h6></div>
-            <div class="col"><small>Remaining</small><h6 class="text-danger">₱{{ loan.remaining }}</h6></div>
-        </div>
+        <!-- AMOUNTS (FIXED HIERARCHY) -->
+<div class="mt-3">
+
+    <!-- 🔴 MAIN VALUE -->
+    <h4 class="
+        {% if loan.remaining == 0 %}
+            text-success
+        {% else %}
+            text-danger
+        {% endif %}
+        mb-1
+    ">
+        ₱{{ "{:,.0f}".format(loan.remaining) }}
+    </h4>
+    <small class="text-muted">Remaining</small>
+
+    <hr style="border-color: rgba(255,255,255,0.1)">
+
+    <!-- 🟡 SECONDARY -->
+    <div class="d-flex justify-content-between">
+        <small>Paid</small>
+        <small class="text-success">
+            ₱{{ "{:,.0f}".format(loan.paid) }}
+        </small>
+    </div>
+
+    <!-- 🔵 LESS IMPORTANT -->
+    <div class="d-flex justify-content-between">
+        <small>{{ 'Bill' if loan.type == 'utility' else 'Total' }}</small>
+        <small>
+            ₱{{ "{:,.0f}".format(loan.total) }}
+        </small>
+    </div>
+
+</div>
 
         <!-- BUTTONS -->
         <div class="mt-3 d-flex gap-2">
             <button class="btn btn-success btn-sm w-100 pay-btn" data-id="{{ loan.id }}">💸</button>
-            <a href="/history/{{ loan.id }}" class="btn btn-dark btn-sm w-100">📜</a>
+            <a href="/history/{{ loan.id }}" class="btn btn-primary btn-sm w-100">📜</a>
+            <button class="btn btn-warning btn-sm w-100 edit-btn"
+        data-id="{{ loan.id }}"
+        data-name="{{ loan.name }}"
+        data-total="{{ loan.total }}"
+        data-charges="{{ loan.charges }}"
+        data-date="{{ loan.due_date }}"
+        data-days="{{ loan.due_days }}"
+        data-image="{{ loan.image }}">
+    ✏️
+</button>
         </div>
 
     </div>
@@ -262,8 +631,8 @@ body {
 
 <!-- NAV -->
 <div class="bottom-nav">
-    <a href="/" class="text-white">🏠</a>
-    <a href="/add_loan" class="text-white">➕</a>
+    <a href="/">🏠</a>
+    <a href="/add_loan">➕</a>
 </div>
 
 <script>
@@ -311,7 +680,7 @@ function openPayModal(loanId){
     <div class="modal-content bg-dark text-white">
 
       <div class="modal-header border-0">
-        <h5 class="modal-title">💸 Quick Pay</h5>
+        <h5 class="modal-title">💸 Payment</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
@@ -320,12 +689,12 @@ function openPayModal(loanId){
 
           <div class="mb-3">
             <label>Amount</label>
-          <input type="number" name="amount" class="form-control" placeholder="Enter amount">
+            <input type="number" name="amount" class="form-control">
           </div>
 
           <div class="mb-3">
             <label>Date</label>
-            <input type="date" name="date" class="form-control" required>
+            <input type="date" name="date" class="form-control">
           </div>
 
           <div class="mb-3">
@@ -336,14 +705,121 @@ function openPayModal(loanId){
         </div>
 
         <div class="modal-footer border-0">
-          <button class="btn btn-success w-100">💾 Save Payment</button>
+          <button class="btn btn-success w-100">💾 Save</button>
         </div>
       </form>
 
     </div>
   </div>
 </div>
+
+<!-- ✏️ EDIT MODAL -->
+<div class="modal fade" id="editModal">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+
+      <!-- ✅ FORM START -->
+      <form method="POST" id="editForm" enctype="multipart/form-data">
+
+        <!-- HEADER -->
+        <div class="modal-header border-0">
+          <h5>Edit Entry</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <!-- BODY -->
+        <div class="modal-body">
+
+             <!-- PREVIEW CURRENT IMAGE -->
+    <div class="text-center mb-3">
+      <img id="editPreview"
+           src=""
+           style="width:90px;height:90px;object-fit:cover;border-radius:50%;display:none;">
+    </div>
+
+    <!-- CHANGE IMAGE -->
+    <div class="mb-3">
+      <label>Change Image</label>
+      <input type="file" name="image" class="form-control" accept="image/*" onchange="previewEditImage(event)">
+    </div>
+
+          <div class="mb-3">
+            <label>Name</label>
+            <input type="text" name="name" class="form-control">
+          </div>
+
+          <div class="mb-3">
+            <label>Total</label>
+            <input type="number" name="total" class="form-control">
+          </div>
+
+          <div class="mb-3">
+            <label>Charges</label>
+            <input type="number" name="charges" class="form-control" step="0.01">
+          </div>
+
+          <!-- ✅ SCHEDULE -->
+          <div class="mb-3">
+            <label>Schedule</label>
+            <select name="schedule" id="editSchedule" class="form-control">
+              <option value="single">Single</option>
+              <option value="multiple">Multiple</option>
+            </select>
+          </div>
+
+          <!-- SINGLE -->
+          <div id="singleDate" class="mb-3">
+            <label>Due Date</label>
+            <input type="date" name="due_date" class="form-control">
+          </div>
+
+          <!-- MULTIPLE -->
+          <div id="multipleDates" style="display:none;">
+            <div class="mb-3">
+              <label>1st Due</label>
+              <input type="date" name="day1" class="form-control">
+            </div>
+
+            <div class="mb-3">
+              <label>2nd Due</label>
+              <input type="date" name="day2" class="form-control">
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="modal-footer border-0">
+          <button type="submit" class="btn btn-warning w-100">💾 Save</button>
+        </div>
+
+      </form>
+      <!-- ✅ FORM END -->
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="calendarModal">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content bg-dark text-white">
+
+      <div class="modal-header border-0">
+        <h5>📅 Calendar</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="calendar"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
+
+
 document.addEventListener("DOMContentLoaded", function(){
 
     document.querySelectorAll(".pay-btn").forEach(btn => {
@@ -411,14 +887,20 @@ document.querySelectorAll(".swipe-item").forEach(item => {
 
     let startX = 0;
     let currentX = 0;
+    let isSwiping = false;
 
     item.addEventListener("touchstart", e => {
         startX = e.touches[0].clientX;
+        isSwiping = false;
     });
 
     item.addEventListener("touchmove", e => {
         currentX = e.touches[0].clientX;
         let diff = startX - currentX;
+
+        if (Math.abs(diff) > 10) {
+            isSwiping = true; // 🔥 detect swipe
+        }
 
         if (diff > 0) {
             item.style.transform = `translateX(-${Math.min(diff, 80)}px)`;
@@ -434,6 +916,15 @@ document.querySelectorAll(".swipe-item").forEach(item => {
             item.style.transform = "translateX(0)";
         }
     });
+
+    // 🔥 THIS FIXES YOUR EDIT BUTTON
+    item.addEventListener("click", function(e){
+        if(isSwiping){
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+
 });
 </script>
 <script>
@@ -444,6 +935,162 @@ function confirmDelete(id){
         }).then(() => location.reload());
     }
 }
+</script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+
+    document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", function(){
+
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            const total = this.dataset.total;
+            const charges = this.dataset.charges;
+            const date = this.dataset.date;
+            const days = this.dataset.days;
+            const img = this.dataset.image;
+
+            const form = document.querySelector("#editModal form");
+            const preview = document.getElementById("editPreview");
+            if(img){
+            preview.src = "/static/uploads/" + img;
+            preview.style.display = "block";
+            }else{
+             preview.style.display = "none";
+            }
+
+            form.action = "/edit_loan/" + id;
+
+            form.querySelector("input[name='name']").value = name || "";
+            form.querySelector("input[name='total']").value = total || 0;
+            form.querySelector("input[name='charges']").value = charges || 0;
+
+            const scheduleSelect = document.getElementById("editSchedule");
+            const singleDiv = document.getElementById("singleDate");
+            const multiDiv = document.getElementById("multipleDates");
+
+            if(days){
+                scheduleSelect.value = "multiple";
+                singleDiv.style.display = "none";
+                multiDiv.style.display = "block";
+
+                const split = days.split(",");
+                form.querySelector("input[name='day1']").value = split[0] || "";
+                form.querySelector("input[name='day2']").value = split[1] || "";
+
+            } else {
+                scheduleSelect.value = "single";
+                singleDiv.style.display = "block";
+                multiDiv.style.display = "none";
+
+                form.querySelector("input[name='due_date']").value = date || "";
+            }
+
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        });
+    });
+
+    document.getElementById("editSchedule").addEventListener("change", function(){
+        if(this.value === "multiple"){
+            document.getElementById("singleDate").style.display = "none";
+            document.getElementById("multipleDates").style.display = "block";
+        } else {
+            document.getElementById("singleDate").style.display = "block";
+            document.getElementById("multipleDates").style.display = "none";
+        }
+    });
+
+});
+</script>
+<script>
+function previewEditImage(event){
+    const file = event.target.files[0];
+    const img = document.getElementById("editPreview");
+
+    if(file){
+        img.src = URL.createObjectURL(file);
+        img.style.display = "block";
+    }
+}
+</script>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script>
+let calendar;
+
+// ✅ ALWAYS SAFE (no syntax errors)
+const calendarEvents = JSON.parse('{{ events | tojson | safe }}');
+
+function openCalendar(){
+    console.log("Calendar clicked");
+
+    const modalEl = document.getElementById('calendarModal');
+
+    if(!modalEl){
+        alert("Modal not found ❌");
+        return;
+    }
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    setTimeout(() => {
+
+        if(!calendar){
+            const calEl = document.getElementById('calendar');
+
+            if(!calEl){
+                alert("Calendar div missing ❌");
+                return;
+            }
+
+            calendar = new FullCalendar.Calendar(calEl, {
+                initialView: 'dayGridMonth',
+                height: "auto",
+                events: calendarEvents
+            });
+
+            calendar.render();
+        }
+
+    }, 200);
+}
+</script>
+<script>
+document.querySelectorAll(".count").forEach(el => {
+
+    let target = parseInt(el.dataset.value);
+    let current = 0;
+
+    let step = target / 40;  // speed
+
+    let interval = setInterval(() => {
+        current += step;
+
+        if (current >= target) {
+            current = target;
+            clearInterval(interval);
+        }
+
+        el.innerText = "₱" + Math.floor(current).toLocaleString();
+
+    }, 20);
+
+});
+</script>
+<script id="progress_anim">
+document.querySelectorAll(".progress-bar").forEach(bar => {
+    let width = bar.style.width;
+    bar.style.width = "0%";
+
+    setTimeout(() => {
+        bar.style.width = width;
+    }, 200);
+});
 </script>
 </body>
 </html>
