@@ -3,7 +3,25 @@ from werkzeug.utils import secure_filename
 import psycopg2
 import os    
 import psycopg2.extras
-from datetime import datetime
+from datetime import datetime, timedelta
+import cloudinary
+import cloudinary.uploader
+
+cloudinary.config(
+    cloud_name="your_cloud_name",
+    api_key="your_api_key",
+    api_secret="your_api_secret"
+)
+
+def get_next_weekday(start_date, weekday):
+    start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    weekday = int(weekday)
+
+    days_ahead = weekday - start.weekday()
+    if days_ahead <= 0:
+        days_ahead += 7
+
+    return start + timedelta(days=days_ahead)
 
 app = Flask(__name__)
 
@@ -31,9 +49,6 @@ def get_next_due(due_days, today):
         return datetime(today.year + 1, 1, days[0]).date()
     else:
         return datetime(today.year, today.month + 1, days[0]).date()
-
-UPLOAD_FOLDER = 'static/uploads'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 
 def get_db():
@@ -96,17 +111,15 @@ def index():
     loan_list = []
     today = datetime.today().date()
 
-    # =========================
-    # 📊 DASHBOARD VARIABLES
-    # =========================
     total_paid_month = 0
     overdue_count = 0
     due_today_count = 0
     upcoming_count = 0
 
     for loan in loans:
+
         # =========================
-        # 💰 TOTAL PAID (ALL TIME)
+        # 💰 TOTAL PAID
         # =========================
         cursor2 = conn.cursor()
         cursor2.execute(
@@ -118,22 +131,6 @@ def index():
 
         paid = payments['total'] if payments and payments['total'] else 0
         remaining = (loan['total_amount'] + loan['charges']) - paid
-
-        # =========================
-        # 💰 TOTAL PAID THIS MONTH
-        # =========================
-        cursor3 = conn.cursor()
-        cursor3.execute("""
-            SELECT SUM(amount) as total 
-            FROM payments 
-            WHERE loan_id=%s
-            AND DATE_TRUNC('month', payment_date::date) = DATE_TRUNC('month', CURRENT_DATE)
-        """, (loan['id'],))
-        month_pay = cursor3.fetchone()
-        cursor3.close()
-
-        if month_pay and month_pay['total']:
-            total_paid_month += month_pay['total']
 
         # =========================
         # 📅 DUE DATE
@@ -152,7 +149,7 @@ def index():
         days_left = (due_date - today).days
 
         # =========================
-        # 📊 STATUS + COUNTS
+        # 📊 STATUS
         # =========================
         if days_left < 0:
             status = "overdue"
@@ -167,6 +164,41 @@ def index():
             status = "normal"
 
         # =========================
+        # 📦 LABEL (for 2x/month)
+        # =========================
+        label = ""
+        days = []
+
+        if loan['due_days']:
+            try:
+                days = sorted([
+                    int(d.strip()) 
+                    for d in loan['due_days'].split(",") 
+                    if d.strip()
+                ])
+            except:
+                days = []
+
+        if len(days) > 0:
+            if due_date.day == days[0]:
+                label = "1st"
+            elif len(days) > 1 and due_date.day == days[1]:
+                label = "2nd"
+
+        # =========================
+        # 🔮 NEXT PAYMENT DISPLAY
+        # =========================
+        next_display = None
+
+        try:
+            installment = loan.get('installment_amount') or 0
+
+            if installment and due_date:
+                next_display = f"₱{int(installment):,} ({due_date.strftime('%b %d')})"
+        except:
+            next_display = None
+
+        # =========================
         # 📦 APPEND
         # =========================
         loan_list.append({
@@ -179,11 +211,16 @@ def index():
             'remaining': remaining,
             'image': loan['image'],
             'due_date': due_date,
-            'status': status
+            'status': status,
+            'due_days': loan['due_days'],
+            'installment': loan.get('installment_amount', 0),
+            'label': label,
+            'schedule_type': loan.get('schedule_type'),
+            'next_display': next_display   # ✅ NEW
         })
 
     # =========================
-    # 📊 SUMMARY TOTALS
+    # 📊 SUMMARY
     # =========================
     loan_total = 0
     loan_paid = 0
@@ -204,7 +241,7 @@ def index():
             loan_remaining += item['remaining']
 
     # =========================
-    # 📅 CALENDAR EVENTS (FIXED)
+    # 📅 EVENTS
     # =========================
     events = []
 
@@ -213,13 +250,12 @@ def index():
             due = loan['due_date']
             days_left = (due - today).days
 
-            # 🎨 COLOR LOGIC
             if days_left < 0:
-                color = "#ef4444"   # 🔴 overdue
+                color = "#ef4444"
             elif days_left <= 2:
-                color = "#facc15"   # 🟡 near due
+                color = "#facc15"
             else:
-                color = "#22c55e"   # 🟢 upcoming
+                color = "#22c55e"
 
             events.append({
                 "title": loan['name'],
@@ -228,9 +264,6 @@ def index():
                 "color": color
             })
 
-    # =========================
-    # ✅ RETURN
-    # =========================
     return render_template(
         'index.html',
         loans=loan_list,
@@ -266,13 +299,13 @@ def add_payment(loan_id):
         file = request.files.get('proof')
 
         if file and file.filename != '':
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            result = cloudinary.uploader.upload(file)
+            filename = result['secure_url']
         else:
             filename = None
 
         # =========================
-        # ✅ SAVE PAYMENT
+        # 💾 SAVE PAYMENT
         # =========================
         cursor = conn.cursor()
         cursor.execute(
@@ -283,37 +316,41 @@ def add_payment(loan_id):
         cursor.close()
 
         # =========================
-        # ✅ GET LOAN
+        # 📦 GET LOAN
         # =========================
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT * FROM loans WHERE id=%s",
-            (loan_id,)
-        )
+        cursor.execute("SELECT * FROM loans WHERE id=%s", (loan_id,))
         loan = cursor.fetchone()
         cursor.close()
 
-        # =========================
-        # ✅ FIXED DUE LOGIC
-        # =========================
         today_dt = datetime.strptime(date, "%Y-%m-%d").date()
 
         if loan:
-            # 🔥 MULTIPLE SCHEDULE
-            if loan['due_days']:
-                days = []
+            schedule = loan.get('schedule_type')
+            due_days = loan.get('due_days')
+            current_due = loan.get('due_date')
 
-                for d in loan['due_days'].split(","):
-                    if "-" in d:
-                        days.append(int(d.split("-")[2]))
-                    else:
-                        days.append(int(d))
+            next_due = None
 
-                days.sort()
+            # =========================
+            # 🔁 WEEKLY
+            # =========================
+            if schedule == "weekly" and due_days:
+                try:
+                    weekday = int(due_days)
+                    next_due = get_next_weekday(date, weekday)
+                except:
+                    next_due = today_dt
 
-                next_due = None
+            # =========================
+            # 🔁 2x PER MONTH
+            # =========================
+            elif schedule == "twice" and due_days:
+                try:
+                    days = sorted([int(d.strip()) for d in due_days.split(",") if d.strip()])
+                except:
+                    days = []
 
-                # check current month
                 for day in days:
                     try:
                         candidate = datetime(today_dt.year, today_dt.month, day).date()
@@ -323,34 +360,40 @@ def add_payment(loan_id):
                     except:
                         continue
 
-                # move to next month if needed
-                if not next_due:
+                if not next_due and days:
+                    # move to next month
                     if today_dt.month == 12:
                         next_due = datetime(today_dt.year + 1, 1, days[0]).date()
                     else:
                         next_due = datetime(today_dt.year, today_dt.month + 1, days[0]).date()
 
-            # 🔥 SINGLE SCHEDULE
+            # =========================
+            # 🔁 MONTHLY
+            # =========================
             else:
-                due_date_obj = datetime.strptime(loan['due_date'], "%Y-%m-%d").date()
+                try:
+                    due_date_obj = datetime.strptime(current_due, "%Y-%m-%d").date()
 
-                if due_date_obj.month == 12:
-                    next_due = due_date_obj.replace(year=due_date_obj.year + 1, month=1)
-                else:
-                    next_due = due_date_obj.replace(month=due_date_obj.month + 1)
+                    if due_date_obj.month == 12:
+                        next_due = due_date_obj.replace(year=due_date_obj.year + 1, month=1)
+                    else:
+                        next_due = due_date_obj.replace(month=due_date_obj.month + 1)
+
+                except:
+                    next_due = today_dt
 
             # =========================
-            # ✅ UPDATE NEXT DUE
+            # 🔄 UPDATE NEXT DUE
             # =========================
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE loans
-                SET due_date=%s
-                WHERE id=%s
-            """, (next_due.strftime("%Y-%m-%d"), loan_id))
-
-            conn.commit()
-            cursor.close()
+            if next_due:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE loans
+                    SET due_date=%s
+                    WHERE id=%s
+                """, (next_due.strftime("%Y-%m-%d"), loan_id))
+                conn.commit()
+                cursor.close()
 
         return redirect('/')
 
@@ -361,28 +404,31 @@ def add_payment(loan_id):
 def edit_loan(id):
     conn = get_db()
 
+    schedule = request.form.get('schedule')
+    start_date = request.form.get('start_date')
+    weekday = request.form.get('weekday')
+    due_days_input = request.form.get('due_days')
     name = request.form.get('name')
     total = request.form.get('total')
     charges = request.form.get('charges')
 
-    schedule = request.form.get('schedule')
-    day1 = request.form.get('day1')
-    day2 = request.form.get('day2')
+    installment_amount = request.form.get('installment_amount') or 0
 
-    # =========================
-    # ✅ DUE LOGIC
-    # =========================
-    if schedule == "multiple":
-        if day1 and day2:
-            due_days = f"{int(day1[-2:])},{int(day2[-2:])}"
-            due_date = day1
-        else:
-            due_days = None
-            due_date = datetime.today().strftime("%Y-%m-%d")
-    else:
-        due_days = None
-        due_date = request.form.get('due_date') or datetime.today().strftime("%Y-%m-%d")
+# =========================
+# 📅 NEW SCHEDULE LOGIC
+# =========================
+    if schedule == "weekly":
+        due_days = weekday
+        next_due = get_next_weekday(start_date, weekday)
+        due_date = next_due.strftime("%Y-%m-%d")
 
+    elif schedule == "twice":
+        due_days = due_days_input  # example: "15,30"
+        due_date = start_date
+
+    else:  # monthly
+        due_days = start_date[-2:] if start_date else None
+        due_date = start_date or datetime.today().strftime("%Y-%m-%d")
     # =========================
     # ✅ IMAGE FIX
     # =========================
@@ -395,8 +441,8 @@ def edit_loan(id):
     cursor.close()
 
     if file and file.filename.strip() != "":
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        result = cloudinary.uploader.upload(file)
+        filename = result['secure_url']
     else:
         filename = current_image
 
@@ -406,14 +452,15 @@ def edit_loan(id):
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE loans 
-        SET name=%s, total_amount=%s, charges=%s, due_date=%s, due_days=%s, image=%s
+        SET name=%s, total_amount=%s, charges=%s, due_date=%s, due_days=%s,installment_amount=%s,schedule_type=%s, image=%s
         WHERE id=%s
-    """, (name, total, charges, due_date, due_days, filename, id))
+    """, (name, total, charges, due_date, due_days, installment_amount,schedule, filename, id))
 
     conn.commit()
     cursor.close()
 
     return redirect('/')
+
 
 # ========================= DELETE =========================
 @app.route('/delete_loan/<int:loan_id>', methods=['POST'])
@@ -487,39 +534,56 @@ def add_loan():
         loan_type = request.form.get('type') or 'loan'
 
         schedule = request.form.get('schedule')
-        due_date = request.form.get('due_date')
-        day1 = request.form.get('day1')
-        day2 = request.form.get('day2')
+        schedule_type = schedule
 
-        # =========================
-        # 📅 SCHEDULE LOGIC
-        # =========================
-        if schedule == "multiple" and day1 and day2:
-            due_days = f"{int(day1[-2:])},{int(day2[-2:])}"
-            due_date = day1
-        else:
-            due_days = None
-            due_date = due_date or datetime.today().strftime("%Y-%m-%d")
+        start_date = request.form.get('start_date')
+        weekday = request.form.get('weekday')
+        due_days_input = request.form.get('due_days')
 
-        # =========================
-        # 🖼 IMAGE
-        # =========================
+        installment_amount = request.form.get('installment_amount') or 0
+
+# =========================
+# 📅 NEW SCHEDULE LOGIC
+# =========================
+        if schedule == "weekly":
+            due_days = weekday
+            next_due = get_next_weekday(start_date, weekday)
+            due_date = next_due.strftime("%Y-%m-%d")
+
+        elif schedule == "twice":
+            due_days = due_days_input  # "15,30"
+            due_date = start_date
+
+        else:  # monthly
+            due_days = start_date[-2:] if start_date else None
+            due_date = start_date or datetime.today().strftime("%Y-%m-%d")
+      
         file = request.files.get('image')
 
         if file and file.filename != '':
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            result = cloudinary.uploader.upload(file)
+            filename = result['secure_url']
         else:
             filename = None
-
         # =========================
         # 💾 SAVE
         # =========================
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO loans (name, type, total_amount, charges, image, due_date, due_days)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (name, loan_type, total, charges, filename, due_date, due_days))
+            INSERT INTO loans 
+            (name, type, total_amount, charges, image, due_date, due_days, installment_amount,schedule_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            name,
+            loan_type,
+            total,
+            charges,
+            filename,
+            due_date,
+            due_days,
+            installment_amount,
+            schedule_type
+        ))
 
         conn.commit()
         cursor.close()
@@ -541,18 +605,18 @@ def debug():
     # since we use RealDictCursor, loans is already dict
     return str(loans)
 
-@app.route('/reset')
-def reset():
+@app.route('/fix_db')
+def fix_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM payments")
-    cursor.execute("DELETE FROM loans")
+    cursor.execute("ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_amount FLOAT")
+    cursor.execute("ALTER TABLE loans ADD COLUMN IF NOT EXISTS schedule_type TEXT")
 
     conn.commit()
     cursor.close()
 
-    return "Database cleared"
+    return "DB fixed ✅"
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

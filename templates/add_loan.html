@@ -124,32 +124,46 @@ body {
 
 <!-- PAYMENT SCHEDULE -->
 
+<!-- 📅 NEW SCHEDULE -->
 <div class="mb-3">
-    <div class="label">Payment Schedule</div>
-
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="schedule" value="single" checked onclick="toggleSchedule()">
-        <label class="form-check-label">Once a month</label>
-    </div>
-
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="schedule" value="multiple" onclick="toggleSchedule()">
-        <label class="form-check-label">Multiple times per month</label>
-    </div>
+    <div class="label">Schedule</div>
+    <select name="schedule" id="schedule" class="form-control">
+        <option value="monthly">Monthly</option>
+        <option value="weekly">Weekly</option>
+        <option value="twice">2x per Month</option>
+    </select>
 </div>
 
-<!-- SINGLE DATE -->
-<div id="singleDate" class="mb-3">
-    <div class="label">Due Date</div>
-    <input type="date" name="due_date" class="form-control">
+<!-- 📅 START DATE -->
+<div class="mb-3">
+    <div class="label">Start Date</div>
+    <input type="date" name="start_date" class="form-control">
 </div>
 
-<!-- MULTIPLE DAYS -->
-<div id="multiDays" style="display:none;" class="mb-3">
-    <div class="label">Select Two Due Dates</div>
+<!-- 📅 WEEKLY -->
+<div id="weeklyOption" style="display:none;" class="mb-3">
+    <div class="label">Day of Week</div>
+    <select name="weekday" class="form-control">
+        <option value="0">Sunday</option>
+        <option value="1">Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+    </select>
+</div>
 
-    <input type="date" name="day1" class="form-control mb-2">
-    <input type="date" name="day2" class="form-control">
+<!-- 📅 2x MONTH -->
+<div id="twiceOption" style="display:none;" class="mb-3">
+    <div class="label">Dates (e.g. 15,30)</div>
+    <input type="text" name="due_days" class="form-control" placeholder="15,30">
+</div>
+
+<!-- 💰 INSTALLMENT -->
+<div class="mb-3">
+    <div class="label">Installment Amount</div>
+    <input type="number" name="installment_amount" class="form-control">
 </div>
 
             <!-- Upload -->
@@ -184,21 +198,29 @@ function previewImage(event){
 }
 </script>
 
+
 <script>
-function toggleSchedule() {
-    const multi = document.getElementById("multiDays");
-    const single = document.getElementById("singleDate");
+document.addEventListener("DOMContentLoaded", function(){
 
-    const selected = document.querySelector("input[name='schedule']:checked").value;
+    const schedule = document.getElementById("schedule");
+    const weekly = document.getElementById("weeklyOption");
+    const twice = document.getElementById("twiceOption");
 
-    if (selected === "multiple") {
-        multi.style.display = "block";
-        single.style.display = "none";
-    } else {
-        multi.style.display = "none";
-        single.style.display = "block";
+    function updateUI(){
+        weekly.style.display = "none";
+        twice.style.display = "none";
+
+        if(schedule.value === "weekly"){
+            weekly.style.display = "block";
+        }
+        else if(schedule.value === "twice"){
+            twice.style.display = "block";
+        }
     }
-}
+
+    schedule.addEventListener("change", updateUI);
+    updateUI();
+});
 </script>
 
 </body>

@@ -450,10 +450,14 @@ button {
         <small>₱{{ "{:,.0f}".format(loan_paid) }}</small>
       </div>
 
+
       <div class="d-flex justify-content-between text-danger">
         <small>Remaining</small>
         <small>₱{{ "{:,.0f}".format(loan_remaining) }}</small>
       </div>
+
+   
+
 
     </div>
   </div>
@@ -521,19 +525,56 @@ button {
           <div class="flex-grow-1">
     <h5 class="mb-1">{{ loan.name }}</h5>
 
+    {% if loan.due_days %}
+
+{% if loan.installment %}
+<div class="text-info">
+    💰 ₱{{ "{:,.0f}".format(loan.installment) }}
+    {% if loan.label %}({{ loan.label }}){% endif %}
+</div>
+{% endif %}
+
+{% if loan.next_display %}
+<div class="text-success small mt-1">
+    ⏭ Next: {{ loan.next_display }}
+</div>
+{% endif %}
+
+{% if loan.schedule_type %}
+<div class="text-secondary mt-1">
+
+    📊 
+    {% if loan.schedule_type == "monthly" %}
+        Monthly
+    {% elif loan.schedule_type == "weekly" %}
+    Weekly (
+    {% set days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+    {{ days[loan.due_days|int] }}
+    )
+    {% elif loan.schedule_type == "twice" %}
+        2x per Month
+    {% endif %}
+
+</div>
+{% endif %}
+
+{% else %}
+
     {% if loan.status == "overdue" %}
-        <span class="badge bg-danger">🔴 Overdue</span>
+        <span class="badge bg-danger">Overdue</span>
 
     {% elif loan.status == "today" %}
-        <span class="badge bg-primary">🔵 Due Today</span>
+        <span class="badge bg-primary">Due Today</span>
 
     {% elif loan.status == "warning" %}
-        <span class="badge bg-warning text-dark">🟡 Due Soon</span>
+        <span class="badge bg-warning text-dark">Due Soon</span>
 
     {% else %}
         <small class="text-muted">
-        📅 {{ loan.due_date }}
-    </small>
+            📅 {{ loan.due_date }}
+        </small>
+    {% endif %}
+
 {% endif %}
 </div>
         </div>
@@ -577,6 +618,15 @@ button {
     <small class="text-muted">Remaining</small>
 
     <hr style="border-color: rgba(255,255,255,0.1)">
+
+    {% if loan.due_days %}
+<div class="d-flex justify-content-between text-info">
+    <small>Installment</small>
+    <small>
+        ₱{{ "{:,.0f}".format(loan.installment or 0) }}
+    </small>
+</div>
+{% endif %}
 
     <!-- 🟡 SECONDARY -->
     <div class="d-flex justify-content-between">
@@ -762,31 +812,45 @@ function openPayModal(loanId){
           <div class="mb-3">
             <label>Schedule</label>
             <select name="schedule" id="editSchedule" class="form-control">
-              <option value="single">Single</option>
-              <option value="multiple">Multiple</option>
-            </select>
+    <option value="monthly">Monthly</option>
+    <option value="weekly">Weekly</option>
+    <option value="twice">2x per Month</option>
+</select>
           </div>
 
-          <!-- SINGLE -->
-          <div id="singleDate" class="mb-3">
-            <label>Due Date</label>
-            <input type="date" name="due_date" class="form-control">
-          </div>
+       <!-- START DATE -->
+<div class="mb-3">
+    <label>Start Date</label>
+    <input type="date" name="start_date" class="form-control">
+</div>
 
-          <!-- MULTIPLE -->
-          <div id="multipleDates" style="display:none;">
-            <div class="mb-3">
-              <label>1st Due</label>
-              <input type="date" name="day1" class="form-control">
-            </div>
+<!-- WEEKLY -->
+<div id="editWeekly" style="display:none;">
+    <label>Day of Week</label>
+    <select name="weekday" class="form-control">
+        <option value="0">Sunday</option>
+        <option value="1">Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+    </select>
+</div>
 
-            <div class="mb-3">
-              <label>2nd Due</label>
-              <input type="date" name="day2" class="form-control">
-            </div>
-          </div>
+<!-- TWICE -->
+<div id="editTwice" style="display:none;">
+    <label>Dates (e.g. 15,30)</label>
+    <input type="text" name="due_days" class="form-control">
+</div>
 
-        </div>
+<!-- INSTALLMENT -->
+<div class="mb-3">
+    <label>Installment</label>
+    <input type="number" name="installment_amount" class="form-control">
+</div>
+
+</div>
 
         <!-- FOOTER -->
         <div class="modal-footer border-0">
@@ -949,17 +1013,17 @@ document.addEventListener("DOMContentLoaded", function(){
             const name = this.dataset.name;
             const total = this.dataset.total;
             const charges = this.dataset.charges;
-            const date = this.dataset.date;
             const days = this.dataset.days;
             const img = this.dataset.image;
 
             const form = document.querySelector("#editModal form");
             const preview = document.getElementById("editPreview");
-            if(img){
-            preview.src = "/static/uploads/" + img;
-            preview.style.display = "block";
-            }else{
-             preview.style.display = "none";
+
+           if(img){
+                preview.src = img;   // ✅ direct URL
+                preview.style.display = "block";
+            } else {
+                preview.style.display = "none";
             }
 
             form.action = "/edit_loan/" + id;
@@ -969,24 +1033,24 @@ document.addEventListener("DOMContentLoaded", function(){
             form.querySelector("input[name='charges']").value = charges || 0;
 
             const scheduleSelect = document.getElementById("editSchedule");
-            const singleDiv = document.getElementById("singleDate");
-            const multiDiv = document.getElementById("multipleDates");
+            const weeklyDiv = document.getElementById("editWeekly");
+            const twiceDiv = document.getElementById("editTwice");
 
-            if(days){
-                scheduleSelect.value = "multiple";
-                singleDiv.style.display = "none";
-                multiDiv.style.display = "block";
+            weeklyDiv.style.display = "none";
+            twiceDiv.style.display = "none";
 
-                const split = days.split(",");
-                form.querySelector("input[name='day1']").value = split[0] || "";
-                form.querySelector("input[name='day2']").value = split[1] || "";
+            if(days && days.includes(",")){
+                scheduleSelect.value = "twice";
+                twiceDiv.style.display = "block";
+                form.querySelector("input[name='due_days']").value = days;
+
+            } else if(days){
+                scheduleSelect.value = "weekly";
+                weeklyDiv.style.display = "block";
+                form.querySelector("select[name='weekday']").value = days;
 
             } else {
-                scheduleSelect.value = "single";
-                singleDiv.style.display = "block";
-                multiDiv.style.display = "none";
-
-                form.querySelector("input[name='due_date']").value = date || "";
+                scheduleSelect.value = "monthly";
             }
 
             new bootstrap.Modal(document.getElementById('editModal')).show();
@@ -994,13 +1058,20 @@ document.addEventListener("DOMContentLoaded", function(){
     });
 
     document.getElementById("editSchedule").addEventListener("change", function(){
-        if(this.value === "multiple"){
-            document.getElementById("singleDate").style.display = "none";
-            document.getElementById("multipleDates").style.display = "block";
-        } else {
-            document.getElementById("singleDate").style.display = "block";
-            document.getElementById("multipleDates").style.display = "none";
+
+        const weeklyDiv = document.getElementById("editWeekly");
+        const twiceDiv = document.getElementById("editTwice");
+
+        weeklyDiv.style.display = "none";
+        twiceDiv.style.display = "none";
+
+        if(this.value === "weekly"){
+            weeklyDiv.style.display = "block";
         }
+        else if(this.value === "twice"){
+            twiceDiv.style.display = "block";
+        }
+
     });
 
 });
@@ -1090,6 +1161,21 @@ document.querySelectorAll(".progress-bar").forEach(bar => {
     setTimeout(() => {
         bar.style.width = width;
     }, 200);
+});
+</script>
+
+<script>
+document.getElementById("editSchedule").addEventListener("change", function(){
+
+    document.getElementById("editWeekly").style.display = "none";
+    document.getElementById("editTwice").style.display = "none";
+
+    if(this.value === "weekly"){
+        document.getElementById("editWeekly").style.display = "block";
+    }
+    else if(this.value === "twice"){
+        document.getElementById("editTwice").style.display = "block";
+    }
 });
 </script>
 </body>
