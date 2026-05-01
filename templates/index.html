@@ -510,18 +510,17 @@ button {
         <!-- HEADER -->
         <div class="d-flex align-items-center gap-3">
 
-            {% if loan.image %}
-                <img src="{{ url_for('static', filename='uploads/' + loan.image) }}" class="loan-img">
-            {% else %}
-                <div class="loan-img d-flex align-items-center justify-content-center bg-secondary text-white">
-                    {% if loan.type == 'utility' %}
-                        💡
-                    {% else %}
-                        💳
-                    {% endif %}
-                </div>
-            {% endif %}
-
+           {% if loan.image %}
+    <img src="{{ loan.image }}" class="loan-img">
+{% else %}
+    <div class="loan-img d-flex align-items-center justify-content-center bg-secondary text-white">
+        {% if loan.type == 'utility' %}
+            💡
+        {% else %}
+            💳
+        {% endif %}
+    </div>
+{% endif %}
           <div class="flex-grow-1">
     <h5 class="mb-1">{{ loan.name }}</h5>
 

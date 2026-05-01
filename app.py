@@ -323,7 +323,13 @@ def add_payment(loan_id):
         loan = cursor.fetchone()
         cursor.close()
 
-        today_dt = datetime.strptime(date, "%Y-%m-%d").date()
+        if not date:
+            today_dt = datetime.today().date()
+        else:
+            try:
+                today_dt = datetime.strptime(date, "%Y-%m-%d").date()
+            except:
+                today_dt = datetime.today().date()
 
         if loan:
             schedule = loan.get('schedule_type')
