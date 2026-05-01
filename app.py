@@ -8,9 +8,9 @@ import cloudinary
 import cloudinary.uploader
 
 cloudinary.config(
-    cloud_name="your_cloud_name",
-    api_key="your_api_key",
-    api_secret="your_api_secret"
+    cloud_name="duersbujf",
+    api_key="279795752659114",
+    api_secret="QAZEk0x5Te59j9Bv9oMMfO2lZy0"
 )
 
 def get_next_weekday(start_date, weekday):
