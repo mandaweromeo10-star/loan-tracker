@@ -13,15 +13,23 @@ cloudinary.config(
     api_secret="QAZEk0x5Te59j9Bv9oMMfO2lZy0"
 )
 
-def get_next_weekday(start_date, weekday):
-    start = datetime.strptime(start_date, "%Y-%m-%d").date()
+def get_next_weekday(start_date, weekday, base_date=None):
+    start = datetime.strptime(str(start_date), "%Y-%m-%d").date()
     weekday = int(weekday)
 
-    days_ahead = weekday - start.weekday()
+    today = base_date if base_date else datetime.today().date()
+
+    # ✅ BEFORE START → return START DATE
+    if today <= start:
+        return start
+
+    # ✅ AFTER START → find next weekday
+    days_ahead = weekday - today.weekday()
+
     if days_ahead <= 0:
         days_ahead += 7
 
-    return start + timedelta(days=days_ahead)
+    return today + timedelta(days=days_ahead)
 
 app = Flask(__name__)
 
@@ -146,7 +154,29 @@ def index():
         else:
             due_date = today
 
-        days_left = (due_date - today).days
+
+       # =========================
+# 🔁 FIX NEXT DATE (REAL)
+# =========================
+        computed_due = due_date
+
+        try:
+            schedule = loan.get('schedule_type')
+            due_days = loan.get('due_days')
+            current_due = loan.get('due_date') or loan.get('start_date')
+
+            if schedule == "weekly" and due_days and current_due:
+                computed_due = get_next_weekday(current_due, int(due_days), today)
+
+            elif schedule == "twice" and due_days:
+                computed_due = due_date 
+
+    # monthly stays same
+
+        except:
+            computed_due = due_date
+
+        days_left = (computed_due - today).days
 
         # =========================
         # 📊 STATUS
@@ -194,7 +224,7 @@ def index():
             installment = loan.get('installment_amount') or 0
 
             if installment and due_date:
-                next_display = f"₱{int(installment):,} ({due_date.strftime('%b %d')})"
+                next_display = f"₱{int(installment):,} ({computed_due.strftime('%b %d')})"
         except:
             next_display = None
 
@@ -293,9 +323,22 @@ def add_payment(loan_id):
         amount = request.form['amount']
         date = request.form.get('date')
 
+        # =========================
+        # 📅 SAFE DATE
+        # =========================
         if not date:
-            date = datetime.today().strftime("%Y-%m-%d")
+            today_dt = datetime.today().date()
+            date = today_dt.strftime("%Y-%m-%d")
+        else:
+            try:
+                today_dt = datetime.strptime(date, "%Y-%m-%d").date()
+            except:
+                today_dt = datetime.today().date()
+                date = today_dt.strftime("%Y-%m-%d")
 
+        # =========================
+        # 🖼 UPLOAD PROOF
+        # =========================
         file = request.files.get('proof')
 
         if file and file.filename != '':
@@ -323,29 +366,29 @@ def add_payment(loan_id):
         loan = cursor.fetchone()
         cursor.close()
 
-        if not date:
-            today_dt = datetime.today().date()
-        else:
-            try:
-                today_dt = datetime.strptime(date, "%Y-%m-%d").date()
-            except:
-                today_dt = datetime.today().date()
+        computed_due = due_date
 
         if loan:
             schedule = loan.get('schedule_type')
             due_days = loan.get('due_days')
-            current_due = loan.get('due_date')
+
+            # 🔥 USE CURRENT DUE ALWAYS
+            current_due = loan.get('due_date') or loan.get('start_date')
 
             next_due = None
 
             # =========================
-            # 🔁 WEEKLY
+            # 🔁 WEEKLY (FINAL FIX)
             # =========================
-            if schedule == "weekly" and due_days:
+            if schedule == "weekly":
                 try:
-                    weekday = int(due_days)
-                    next_due = get_next_weekday(date, weekday)
-                except:
+                    due_date_obj = datetime.strptime(str(current_due), "%Y-%m-%d").date()
+
+                    # ✅ SIMPLE + RELIABLE
+                    next_due = due_date_obj + timedelta(days=7)
+
+                except Exception as e:
+                    print("WEEKLY ERROR:", e)
                     next_due = today_dt
 
             # =========================
@@ -353,32 +396,40 @@ def add_payment(loan_id):
             # =========================
             elif schedule == "twice" and due_days:
                 try:
-                    days = sorted([int(d.strip()) for d in due_days.split(",") if d.strip()])
+                    days = sorted([
+                        int(d.strip()) for d in due_days.split(",") if d.strip()
+                    ])
                 except:
                     days = []
 
+                try:
+                        current_due_obj = datetime.strptime(str(current_due), "%Y-%m-%d").date()
+                except:
+                        current_due_obj = today_dt
+
+                next_due = None
+
                 for day in days:
-                    try:
-                        candidate = datetime(today_dt.year, today_dt.month, day).date()
-                        if candidate > today_dt:
-                            next_due = candidate
-                            break
-                    except:
-                        continue
+                    if day > current_due_obj.day:
+                        next_due = datetime(
+                            current_due_obj.year,
+                            current_due_obj.month,
+                            day
+                        ).date()
+                        break
 
                 if not next_due and days:
-                    # move to next month
                     if today_dt.month == 12:
-                        next_due = datetime(today_dt.year + 1, 1, days[0]).date()
+                        next_due = datetime(current_due_obj.year + 1, 1, days[0]).date()
                     else:
-                        next_due = datetime(today_dt.year, today_dt.month + 1, days[0]).date()
+                        next_due = datetime(current_due_obj.year, current_due_obj.month + 1, days[0]).date()
 
             # =========================
             # 🔁 MONTHLY
             # =========================
             else:
                 try:
-                    due_date_obj = datetime.strptime(current_due, "%Y-%m-%d").date()
+                    due_date_obj = datetime.strptime(str(current_due), "%Y-%m-%d").date()
 
                     if due_date_obj.month == 12:
                         next_due = due_date_obj.replace(year=due_date_obj.year + 1, month=1)
@@ -392,6 +443,9 @@ def add_payment(loan_id):
             # 🔄 UPDATE NEXT DUE
             # =========================
             if next_due:
+                print("CURRENT:", current_due)
+                print("NEXT:", next_due)
+
                 cursor = conn.cursor()
                 cursor.execute("""
                     UPDATE loans
@@ -577,8 +631,8 @@ def add_loan():
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO loans 
-            (name, type, total_amount, charges, image, due_date, due_days, installment_amount,schedule_type)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (name, type, total_amount, charges, image, due_date, due_days, installment_amount,schedule_type, start_date)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             name,
             loan_type,
@@ -588,7 +642,8 @@ def add_loan():
             due_date,
             due_days,
             installment_amount,
-            schedule_type
+            schedule_type,
+            start_date
         ))
 
         conn.commit()
@@ -611,18 +666,7 @@ def debug():
     # since we use RealDictCursor, loans is already dict
     return str(loans)
 
-@app.route('/fix_db')
-def fix_db():
-    conn = get_db()
-    cursor = conn.cursor()
 
-    cursor.execute("ALTER TABLE loans ADD COLUMN IF NOT EXISTS installment_amount FLOAT")
-    cursor.execute("ALTER TABLE loans ADD COLUMN IF NOT EXISTS schedule_type TEXT")
-
-    conn.commit()
-    cursor.close()
-
-    return "DB fixed ✅"
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
